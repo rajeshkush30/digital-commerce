@@ -5,6 +5,7 @@ pipeline {
         IMAGE_NAME = "digital-commerce-app"
         CONTAINER_NAME = "digital-commerce-container"
         DOCKER_IMAGE_TAG = "latest"
+        SONARQUBE_ENV = "SonarQubeServer" // Must match the Jenkins configured SonarQube name
     }
 
     tools {
@@ -15,6 +16,17 @@ pipeline {
         stage('Clone Source') {
             steps {
                 git credentialsId: 'github-token', url: 'https://github.com/rajeshkush30/digital-commerce.git', branch: 'master'
+            }
+        }
+        
+        stage('Code Quality - SonarQube') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    withMaven(maven: 'Maven 3.8.5') {
+                        // Sonar analysis with Maven plugin
+                        bat 'mvn sonar:sonar -Dsonar.projectKey=digital-commerce-app -Dsonar.login=%SONAR_AUTH_TOKEN%'
+                    }
+                }
             }
         }
 
