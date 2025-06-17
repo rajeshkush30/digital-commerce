@@ -1,61 +1,59 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "digital-commerce-app"
+        CONTAINER_NAME = "digital-commerce-container"
+        DOCKER_IMAGE_TAG = "latest"
+    }
+
+    tools {
+        maven 'Maven 3.8.5' // Make sure Jenkins has this configured under Global Tools
+    }
+
     stages {
-        stage('Build') {
+        stage('Clone Source') {
             steps {
-                echo 'Building...'
+                git credentialsId: 'github-creds', url: 'https://github.com/rajeshkush30/digital-commerce.git', branch: 'master'
             }
         }
 
-        stage('Test') {
+        stage('Build Project') {
             steps {
-                echo 'Testing...'
-            }
-        }
-		
-		stage('SonarQube Analysis') {
-			steps {
-				withSonarQubeEnv('SonarQubeServer') {
-					sh 'mvn sonar:sonar -Dsonar.projectKey=digital-commerce -Dsonar.host.url=http://localhost:9000'
-				}
-			}
-		}
-		
-		environment {
-			IMAGE_NAME = 'your-dockerhub-username/your-app'
-		}
-
-        stage('Build App') {
-            steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean install -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    dockerImage = docker.build("${IMAGE_NAME}")
-                }
+                sh "docker build -t ${IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Stop and Remove Existing Container') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push ${IMAGE_NAME}
-                    """
-                }
+                sh """
+                docker stop ${CONTAINER_NAME} || true
+                docker rm ${CONTAINER_NAME} || true
+                """
             }
         }
-    
 
-        stage('Deploy') {
+        stage('Run Docker Container') {
             steps {
-                echo 'Deploying...'
+                sh """
+                docker run -d -p 8080:8080 --name ${CONTAINER_NAME} ${IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+                """
             }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Deployment Successful!'
+        }
+        failure {
+            echo '❌ Deployment Failed. Please check the console output.'
         }
     }
 }
