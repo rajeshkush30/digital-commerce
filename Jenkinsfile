@@ -14,35 +14,35 @@ pipeline {
     stages {
         stage('Clone Source') {
             steps {
-                git credentialsId: 'github-creds', url: 'https://github.com/rajeshkush30/digital-commerce.git', branch: 'master'
+                git credentialsId: 'github-token', url: 'https://github.com/rajeshkush30/digital-commerce.git', branch: 'master'
             }
         }
 
         stage('Build Project') {
             steps {
-                sh 'mvn clean install -DskipTests'
+                bat 'mvn clean install -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                bat "docker build -t %IMAGE_NAME%:%DOCKER_IMAGE_TAG% ."
             }
         }
 
         stage('Stop and Remove Existing Container') {
             steps {
-                sh """
-                docker stop ${CONTAINER_NAME} || true
-                docker rm ${CONTAINER_NAME} || true
+                bat """
+                docker stop %CONTAINER_NAME% || exit 0
+                docker rm %CONTAINER_NAME% || exit 0
                 """
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                sh """
-                docker run -d -p 8080:8080 --name ${CONTAINER_NAME} ${IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+                bat """
+                docker run -d -p 8081:8081 --name %CONTAINER_NAME% %IMAGE_NAME%:%DOCKER_IMAGE_TAG%
                 """
             }
         }
