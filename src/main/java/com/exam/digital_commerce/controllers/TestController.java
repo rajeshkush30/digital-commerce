@@ -8,6 +8,7 @@ public class TestController {
 	
 	@GetMapping("/test")
 	public String test() {
+		
 		return "My CI/CD pipeline working fine";
 	}
 	
