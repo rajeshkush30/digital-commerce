@@ -9,7 +9,7 @@ public class TestController {
 	@GetMapping("/test")
 	public String test() {
 		//this is my controller
-		return "My changes reflect";
+		return "My changes reflect ";
 	}
 	
 
